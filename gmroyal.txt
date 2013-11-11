@@ -1,0 +1,7 @@
+"Gamemode"
+{
+	"base"			"base"
+    "title"			"GmodRoyal"
+	"maps"			"^gm_"
+	"menusystem"	"1"
+}
