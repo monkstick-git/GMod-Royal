@@ -1,24 +1,40 @@
 gmodRoyal.BetTable = {}
+util.AddNetworkString("gmodRoyal.RouletteUI")
+util.AddNetworkString("gmodRoyal.RecieveBet")
+
 -- http://gamesofroulette.com/img/pictures/roulette-rules/american-roulette-table.gif for Image reference
 local RedNumbers = {1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36}
 
 function gmodRoyal.MakeBetTable() 
-gmodRoyal.RouletteOdds = {}
+	gmodRoyal.RouletteOdds = {}
 end
 
 gmodRoyal.MakeBetTable()
 
 function gmodRoyal.Roulette()
-local RandomNumber = math.random(0,36)
-local Colour
-if(table.HasValue(RedNumbers,RandomNumber)) then Colour = "Red" else if(RandomNumber == 0) then Colour = "Green" else Colour = "Black" end  end
-PrintMessage(HUD_PRINTTALK,RandomNumber.." - "..Colour)
+	local RandomNumber = math.random(0,36)
+	local Colour
+	
+	if(table.HasValue(RedNumbers,RandomNumber)) then
+		Colour = "Red"
+	else if(RandomNumber == 0) then
+		Colour = "Green" 
+	else 
+		Colour = "Black"
+	end 
 
-for key,value in pairs(gmodRoyal.RouletteOdds) do
-	for k,v in pairs(value[4]) do
-		if(v == RandomNumber) then PrintMessage(HUD_PRINTTALK,"You win "..(value[2] * value[3])) gmodRoyal.AddPlayerChips(value[1],(value[2] * value[3])) break end
 	end
-end
+	
+	gmodRoyal.addChat(nil,"Roulette Winning Number: "..RandomNumber.." - "..Colour)
+
+	for key,value in pairs(gmodRoyal.RouletteOdds) do
+		for k,v in pairs(value[4]) do
+			if(v == RandomNumber) then
+				gmodRoyal.addChat(ply,"You win "..(value[2] * value[3])) gmodRoyal.AddPlayerChips(value[1],(value[2] * value[3])) break
+				
+			end
+		end
+	end
 
 gmodRoyal.MakeBetTable()
 timer.Create("DoRoulette",30,1,function() gmodRoyal.RouletteTimer() end) 
@@ -71,7 +87,7 @@ function gmodRoyal.DoBet(ply,Amount,B) -- B Means Bet
 	elseif B == 33 then gmodRoyal.PlaceBet(ply,Amount,36,{33})
 	elseif B == 34 then gmodRoyal.PlaceBet(ply,Amount,36,{34})
 	elseif B == 35 then gmodRoyal.PlaceBet(ply,Amount,36,{35})
-	elseif B == 36 then gmodRoyal.PlaceBet(ply,Amount,36,{36}) -- Single 1 16 stops here
+	elseif B == 36 then gmodRoyal.PlaceBet(ply,Amount,36,{36}) -- Single 1 36 stops here
 	elseif B == 37 then gmodRoyal.PlaceBet(ply,Amount,36,{0}) -- Zero
 	elseif B == 38 then gmodRoyal.PlaceBet(ply,Amount,3,{1,2,3,4,5,6,7,8,9,10,11,12}) -- 1 to 12
 	elseif B == 39 then gmodRoyal.PlaceBet(ply,Amount,3,{13,14,15,16,17,18,19,20,21,22,23,24}) -- 13 to 24
@@ -87,17 +103,35 @@ function gmodRoyal.DoBet(ply,Amount,B) -- B Means Bet
 	elseif B == 49 then gmodRoyal.PlaceBet(ply,Amount,3,{3,6,9,12,15,18,21,24,27,30,33,36}) -- Line from 3 to 36 - Left to right
 	
 	else
-	PrintMessage(HUD_PRINTTALK,"GMod-Royal Debug: Severe Error: 0001-"..B)
+	gmodRoyal.addChat(nil,"GMod-Royal Debug: Severe Error: 0001-"..B)
 	
 	end	
 	
 end
 
 function gmodRoyal.PlaceBet(ply,amount,payout,winners)
+
 	if(tonumber(ply.Chips) >= tonumber(amount)) then
 		table.insert(gmodRoyal.RouletteOdds,{ply,amount,payout,winners})
-		ply.Chips = ply.Chips - amount
+		gmodRoyal.TakePlayerChips(ply,amount)
 	else
-		ply:PrintMessage(HUD_PRINTTALK,"You do not have the sufficient funds to do that!")
+		gmodRoyal.addChat(ply,"You do not have the sufficient funds to do that!")
 	end
 end
+
+function gmodRoyal.ShowUI(ply)
+net.Start("gmodRoyal.RouletteUI")
+net.Send(ply)
+end
+
+function gmodRoyal.RecieveBet()
+	local TempTable = net.ReadTable( )
+	local Player = TempTable["Ent"]
+	local Amount = TempTable["Amount"]
+	local Bet = TempTable["Bet"]
+	
+	gmodRoyal.DoBet(Player,Amount,Bet)
+	
+end
+
+net.Receive( "gmodRoyal.RecieveBet",function() gmodRoyal.RecieveBet() end)
